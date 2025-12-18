@@ -1,0 +1,12 @@
+---
+# defaults file for roles/tomcat
+java_package: openjdk-17-jdk
+
+tomcat_version: 10.1.12
+
+tomcat_user: tomcat
+tomcat_group: tomcat
+
+tomcat_install_dir: /opt/tomcat
+tomcat_symlink: /opt/tomcat/latest
+

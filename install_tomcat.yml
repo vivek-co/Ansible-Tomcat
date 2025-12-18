@@ -1,0 +1,6 @@
+---
+- name: Install Tomcat on all target servers
+  hosts: tomcat_servers
+  become: yes
+  roles:
+    - tomcat
