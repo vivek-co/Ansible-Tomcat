@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        // Make Ansible output cleaner in Jenkins logs
+        // Makes Ansible output more readable in Jenkins logs
         ANSIBLE_STDOUT_CALLBACK = 'minimal'
     }
 
@@ -18,8 +18,9 @@ pipeline {
             }
         }
 
-        stage('Deploy Tomcat using Ansible') {
+        stage('Deploy/Restart Tomcat') {
             steps {
+                echo "Deploying Tomcat on target servers..."
                 ansiblePlaybook(
                     playbook: 'install_tomcat.yml',
                     inventory: 'hosts.ini',
@@ -42,10 +43,10 @@ pipeline {
 
     post {
         success {
-            echo "Tomcat deployment completed successfully!"
+            echo "Tomcat deployment and verification completed successfully!"
         }
         failure {
-            echo "Tomcat deployment failed. Check logs for details."
+            echo "Tomcat deployment or verification failed. Check logs for details."
         }
     }
 }
