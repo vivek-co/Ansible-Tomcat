@@ -89,10 +89,10 @@
       notify:
         - Reload systemd
 
-    - name: Start Tomcat
+    - name: Start or restart Tomcat
       systemd:
         name: tomcat
-        state: started
+        state: restarted
         enabled: yes
 
   handlers:
