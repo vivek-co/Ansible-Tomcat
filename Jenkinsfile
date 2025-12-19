@@ -5,6 +5,11 @@ pipeline {
         timestamps()
     }
 
+    environment {
+        // Make Ansible output cleaner in Jenkins logs
+        ANSIBLE_STDOUT_CALLBACK = 'minimal'
+    }
+
     stages {
 
         stage('Checkout Code') {
@@ -18,9 +23,29 @@ pipeline {
                 ansiblePlaybook(
                     playbook: 'install_tomcat.yml',
                     inventory: 'hosts.ini',
-                    extras: '-v --ssh-common-args="-o StrictHostKeyChecking=no"'
+                    extras: '--ssh-common-args="-o StrictHostKeyChecking=no"'
                 )
             }
+        }
+
+        stage('Verify Tomcat') {
+            steps {
+                echo "Verifying Tomcat status on target servers..."
+                ansiblePlaybook(
+                    playbook: 'verify_tomcat.yml',
+                    inventory: 'hosts.ini',
+                    extras: '--ssh-common-args="-o StrictHostKeyChecking=no"'
+                )
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Tomcat deployment completed successfully!"
+        }
+        failure {
+            echo "Tomcat deployment failed. Check logs for details."
         }
     }
 }
