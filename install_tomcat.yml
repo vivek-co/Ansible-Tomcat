@@ -1,19 +1,101 @@
 ---
 - hosts: all
   become: yes
+  vars:
+    tomcat_version: "10.1.12"
+    tomcat_user: "tomcat"
+    tomcat_group: "tomcat"
+    install_dir: "/opt/tomcat"
+    tomcat_tarball: "apache-tomcat-{{ tomcat_version }}.tar.gz"
+    download_url: "https://archive.apache.org/dist/tomcat/tomcat-10/v{{ tomcat_version }}/bin/{{ tomcat_tarball }}"
+
   tasks:
-    - name: Check if Tomcat process is running
-      shell: pgrep -f 'org.apache.catalina.startup.Bootstrap'
-      register: tomcat_status
+    - name: Stop Tomcat if running
+      systemd:
+        name: tomcat
+        state: stopped
       ignore_errors: yes
 
-    - name: Print Tomcat status
-      debug:
-        msg: >
-          Tomcat is running (PID: {{ tomcat_status.stdout }})
-      when: tomcat_status.rc == 0
+    - name: Remove existing Tomcat directory
+      file:
+        path: "{{ install_dir }}"
+        state: absent
 
-    - name: Tomcat is not running
-      debug:
-        msg: "Tomcat is not running!"
-      when: tomcat_status.rc != 0
+    - name: Ensure Tomcat group exists
+      group:
+        name: "{{ tomcat_group }}"
+        state: present
+
+    - name: Ensure Tomcat user exists
+      user:
+        name: "{{ tomcat_user }}"
+        group: "{{ tomcat_group }}"
+        home: "/home/{{ tomcat_user }}"
+        shell: /bin/false
+        state: present
+
+    - name: Create Tomcat installation directory
+      file:
+        path: "{{ install_dir }}"
+        state: directory
+        owner: "{{ tomcat_user }}"
+        group: "{{ tomcat_group }}"
+        mode: '0755'
+
+    - name: Download Tomcat tarball
+      get_url:
+        url: "{{ download_url }}"
+        dest: "/tmp/{{ tomcat_tarball }}"
+        mode: '0644'
+
+    - name: Extract Tomcat
+      unarchive:
+        src: "/tmp/{{ tomcat_tarball }}"
+        dest: "{{ install_dir }}"
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+
+    - name: Set permissions
+      file:
+        path: "{{ install_dir }}"
+        state: directory
+        recurse: yes
+        owner: "{{ tomcat_user }}"
+        group: "{{ tomcat_group }}"
+        mode: '0755'
+
+    - name: Deploy systemd service
+      copy:
+        dest: /etc/systemd/system/tomcat.service
+        content: |
+          [Unit]
+          Description=Apache Tomcat
+          After=network.target
+
+          [Service]
+          Type=forking
+          User={{ tomcat_user }}
+          Group={{ tomcat_group }}
+          Environment="JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64"
+          Environment="CATALINA_PID={{ install_dir }}/temp/tomcat.pid"
+          Environment="CATALINA_HOME={{ install_dir }}"
+          Environment="CATALINA_BASE={{ install_dir }}"
+          ExecStart={{ install_dir }}/bin/startup.sh
+          ExecStop={{ install_dir }}/bin/shutdown.sh
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+      notify:
+        - Reload systemd
+
+    - name: Start Tomcat
+      systemd:
+        name: tomcat
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
