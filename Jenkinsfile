@@ -18,7 +18,7 @@ pipeline {
                 ansiblePlaybook(
                     playbook: 'install_tomcat.yml',
                     inventory: 'hosts.ini',
-                    extras: '-v'
+                    extras: '-v --ssh-common-args="-o StrictHostKeyChecking=no"'
                 )
             }
         }
