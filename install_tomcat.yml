@@ -1,6 +1,19 @@
 ---
-- name: Install Tomcat on all target servers
-  hosts: tomcat_servers
+- hosts: all
   become: yes
-  roles:
-    - tomcat
+  tasks:
+    - name: Check if Tomcat process is running
+      shell: pgrep -f 'org.apache.catalina.startup.Bootstrap'
+      register: tomcat_status
+      ignore_errors: yes
+
+    - name: Print Tomcat status
+      debug:
+        msg: >
+          Tomcat is running (PID: {{ tomcat_status.stdout }})
+      when: tomcat_status.rc == 0
+
+    - name: Tomcat is not running
+      debug:
+        msg: "Tomcat is not running!"
+      when: tomcat_status.rc != 0
