@@ -88,14 +88,15 @@
           WantedBy=multi-user.target
       notify:
         - Reload systemd
-
-    - name: Start or restart Tomcat
-      systemd:
-        name: tomcat
-        state: restarted
-        enabled: yes
+        - Start Tomcat
 
   handlers:
     - name: Reload systemd
       systemd:
         daemon_reload: yes
+
+    - name: Start Tomcat
+      systemd:
+        name: tomcat
+        state: restarted
+        enabled: yes
