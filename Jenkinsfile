@@ -16,12 +16,11 @@ pipeline {
         stage('Deploy Tomcat using Ansible') {
             steps {
                 ansiblePlaybook(
-                    playbook: 'playbook.yml',
-                    inventory: 'inventory/hosts.ini',
+                    playbook: 'install_tomcat.yml',
+                    inventory: 'hosts.ini',
                     extras: '-v'
                 )
             }
         }
     }
 }
-
